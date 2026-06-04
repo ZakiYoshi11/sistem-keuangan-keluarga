@@ -7,10 +7,13 @@ import React from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Auth from './components/Auth';
 import Dashboard from './components/Dashboard';
+import RecoveryForm from './components/RecoveryForm';
+import useAutoLogout from './hooks/useAutoLogout';
 import { Toaster } from 'sonner';
 
 function AppContent() {
-  const { user, loading } = useAuth();
+  const { user, loading, isRecovery } = useAuth();
+  useAutoLogout();
 
   if (loading) {
     return (
@@ -18,6 +21,10 @@ function AppContent() {
         <div className="animate-spin rounded-full h-10 w-10 border-4 border-gray-200 border-t-blue-600"></div>
       </div>
     );
+  }
+
+  if (isRecovery) {
+    return <RecoveryForm />;
   }
 
   return user ? <Dashboard /> : <Auth />;
