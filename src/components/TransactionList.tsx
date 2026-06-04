@@ -47,7 +47,7 @@ export default function TransactionList({ transactions, onRefresh }: { transacti
                   {format(parseISO(t.transaction_date), 'dd MMM yyyy', { locale: dateId })}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
-                  {t.category}
+                  {t.pockets?.name || t.category}
                 </td>
                 <td className={cn(
                   "px-6 py-4 whitespace-nowrap text-sm font-bold",

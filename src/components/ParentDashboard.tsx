@@ -7,11 +7,14 @@ import DashboardCharts from './DashboardCharts';
 import TransactionList from './TransactionList';
 import { Link2, Users } from 'lucide-react';
 
+import PocketBalances from './PocketBalances';
+
 export default function ParentDashboard() {
   const { user } = useAuth();
   const [tokenInput, setTokenInput] = useState('');
   const [linkedAdmins, setLinkedAdmins] = useState<string[]>([]);
   const [transactions, setTransactions] = useState<any[]>([]);
+  const [pockets, setPockets] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchData = async () => {
@@ -29,18 +32,29 @@ export default function ParentDashboard() {
         const adminIds = links.map(l => l.admin_id);
         setLinkedAdmins(adminIds);
 
-        const { data: txs, error: txError } = await supabase
-          .from('transactions')
-          .select('*')
-          .in('user_id', adminIds)
-          .order('transaction_date', { ascending: false })
-          .order('created_at', { ascending: false });
+        const [txRes, pocketRes] = await Promise.all([
+          supabase
+            .from('transactions')
+            .select('*, pockets(name)')
+            .in('user_id', adminIds)
+            .order('transaction_date', { ascending: false })
+            .order('created_at', { ascending: false }),
+          supabase
+            .from('pockets')
+            .select('*')
+            .in('user_id', adminIds)
+            .order('created_at', { ascending: false })
+        ]);
 
-        if (txError) throw txError;
-        setTransactions(txs || []);
+        if (txRes.error) throw txRes.error;
+        if (pocketRes.error) throw pocketRes.error;
+
+        setTransactions(txRes.data || []);
+        setPockets(pocketRes.data || []);
       } else {
         setLinkedAdmins([]);
         setTransactions([]);
+        setPockets([]);
       }
     } catch (error: any) {
       toast.error('Gagal mengambil data pantauan: ' + error.message);
@@ -138,6 +152,9 @@ export default function ParentDashboard() {
              </div>
           </div>
           <SummaryCards transactions={transactions} />
+          
+          <PocketBalances pockets={pockets} transactions={transactions} />
+
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-1">
               <DashboardCharts transactions={transactions} />

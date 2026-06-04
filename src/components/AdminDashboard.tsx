@@ -6,6 +6,8 @@ import SummaryCards from './SummaryCards';
 import DashboardCharts from './DashboardCharts';
 import TransactionList from './TransactionList';
 import TransactionForm from './TransactionForm';
+import PocketManager from './PocketManager';
+import PocketBalances from './PocketBalances';
 import { KeyRound, Copy, Pencil, X, Check } from 'lucide-react';
 
 export default function AdminDashboard() {
@@ -59,18 +61,30 @@ export default function AdminDashboard() {
     }
   };
 
+  const [pockets, setPockets] = useState<any[]>([]);
+
   const fetchTransactions = async () => {
     if (!user) return;
     try {
-      const { data, error } = await supabase
-        .from('transactions')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('transaction_date', { ascending: false })
-        .order('created_at', { ascending: false });
+      const [txRes, pocketRes] = await Promise.all([
+        supabase
+          .from('transactions')
+          .select('*, pockets(name)')
+          .eq('user_id', user.id)
+          .order('transaction_date', { ascending: false })
+          .order('created_at', { ascending: false }),
+        supabase
+          .from('pockets')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+      ]);
 
-      if (error) throw error;
-      setTransactions(data || []);
+      if (txRes.error) throw txRes.error;
+      if (pocketRes.error) throw pocketRes.error;
+      
+      setTransactions(txRes.data || []);
+      setPockets(pocketRes.data || []);
     } catch (e: any) {
       toast.error('Gagal mengambil data: ' + e.message);
     } finally {
@@ -171,7 +185,10 @@ export default function AdminDashboard() {
 
       <SummaryCards transactions={transactions} />
       
-      <TransactionForm onRefresh={fetchTransactions} />
+      <PocketBalances pockets={pockets} transactions={transactions} />
+      <PocketManager pockets={pockets} onRefresh={fetchTransactions} />
+
+      <TransactionForm onRefresh={fetchTransactions} pockets={pockets} />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-1">
